@@ -11,7 +11,7 @@ import java.util.Map;
 public interface GPTClient {
     @PostMapping
     Map<String, Object> getConversation(
-            @RequestHeader("Authorization") String token
-            @RequestBody
+            @RequestHeader("Authorization") String token,
+            @RequestBody GPTRequest gptRequest
     );
 }

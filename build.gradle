@@ -32,6 +32,8 @@ dependencies {
     implementation 'org.springframework.cloud:spring-cloud-starter-openfeign:4.0.4'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.13.0'
+
 
     // for MQTT
     implementation("org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.2.5")
