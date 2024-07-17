@@ -11,6 +11,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+
 @RequiredArgsConstructor
 @RestController
 public class ObjectController {
@@ -28,8 +30,8 @@ public class ObjectController {
     }
 
     @GetMapping("/chat")
-    public void chat(@RequestParam String answer) {
-        objectService.chat(answer);
+    public List<String> chat(@RequestParam String answer) throws JsonProcessingException {
+        return objectService.chat(answer);
     }
 
     @GetMapping("/send")

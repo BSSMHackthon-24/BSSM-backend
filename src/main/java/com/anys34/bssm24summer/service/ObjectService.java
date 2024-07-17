@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -41,7 +42,7 @@ public class ObjectService {
         return new WeatherResponse(weather, temp);
     }
 
-    public void chat(String answer) {
+    public List<String> chat(String answer) throws JsonProcessingException {
         List<Objects> objects = objectRepository.findAll();
         StringBuilder list = new StringBuilder();
         for(Objects obj: objects) {
@@ -55,10 +56,24 @@ public class ObjectService {
         Map<String, Object> message = (Map<String, Object>) choice.get("message");
         String content = (String) message.get("content");
 
-        String[] split = content.split("\n\n");
+        String[] split = content.split("\n");
         System.out.println("content = " + content);
         System.out.println("split[0] = " + split[0]);
         System.out.println("split[1] = " + split[1]);
         mqttGateway.sendToMqtt(split[1]);
+
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode rootNode = mapper.readTree(split[0]);
+
+        List<String> trueItems = new ArrayList<>();
+        Iterator<Map.Entry<String, JsonNode>> fields = rootNode.fields();
+        while (fields.hasNext()) {
+            Map.Entry<String, JsonNode> field = fields.next();
+            if (field.getValue().asBoolean()) {
+                trueItems.add(field.getKey());
+            }
+        }
+
+        return trueItems;
     }
 }
