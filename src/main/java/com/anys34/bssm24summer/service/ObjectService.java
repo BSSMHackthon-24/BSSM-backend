@@ -2,7 +2,9 @@ package com.anys34.bssm24summer.service;
 
 import com.anys34.bssm24summer.controller.dto.WeatherResponse;
 import com.anys34.bssm24summer.domain.Objects;
+import com.anys34.bssm24summer.domain.Saave;
 import com.anys34.bssm24summer.domain.repository.ObjectRepository;
+import com.anys34.bssm24summer.domain.repository.SaaveRepository;
 import com.anys34.bssm24summer.feign.GPTClient;
 import com.anys34.bssm24summer.feign.GPTRequest;
 import com.anys34.bssm24summer.feign.WeatherInformationClient;
@@ -12,6 +14,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -25,9 +28,11 @@ public class ObjectService {
     private final GPTClient gptClient;
     private final ObjectRepository objectRepository;
     private final MqttService.MqttGateway mqttGateway;
+    private final SaaveRepository saaveRepository;
 
     @Value("${gpt.token}")
     private String token;
+    private String mot = "1";
 
     public WeatherResponse weather() {
         Map<String, Object> response = weatherInformationClient
@@ -42,6 +47,7 @@ public class ObjectService {
         return new WeatherResponse(weather, temp);
     }
 
+    @Transactional
     public List<String> chat(String answer) throws JsonProcessingException {
         List<Objects> objects = objectRepository.findAll();
         StringBuilder list = new StringBuilder();
@@ -60,7 +66,16 @@ public class ObjectService {
         System.out.println("content = " + content);
         System.out.println("split[0] = " + split[0]);
         System.out.println("split[1] = " + split[1]);
+        System.out.println("split[2] = " + split[2]);
         mqttGateway.sendToMqtt(split[1]);
+        mqttGateway.sendToMqtt(mot);
+        if (mot.equals("1")) mot = "2";
+        else mot = "1";
+
+        Saave saave = saaveRepository.findById(1L)
+                .orElseThrow(() -> new IllegalArgumentException());
+
+        saave.update(split[0], split[2]);
 
         ObjectMapper mapper = new ObjectMapper();
         JsonNode rootNode = mapper.readTree(split[0]);
