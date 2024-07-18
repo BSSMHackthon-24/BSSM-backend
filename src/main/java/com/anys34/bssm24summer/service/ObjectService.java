@@ -11,13 +11,12 @@ import com.anys34.bssm24summer.feign.WeatherInformationClient;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -48,7 +47,7 @@ public class ObjectService {
     }
 
     @Transactional
-    public List<String> chat(String answer) throws JsonProcessingException {
+    public ObjectNode chat(String answer) throws JsonProcessingException {
         List<Objects> objects = objectRepository.findAll();
         StringBuilder list = new StringBuilder();
         for(Objects obj: objects) {
@@ -62,33 +61,41 @@ public class ObjectService {
         Map<String, Object> message = (Map<String, Object>) choice.get("message");
         String content = (String) message.get("content");
 
-        String[] split = content.split("\n");
         System.out.println("content = " + content);
-        System.out.println("split[0] = " + split[0]);
-        System.out.println("split[1] = " + split[1]);
-        System.out.println("split[2] = " + split[2]);
-        mqttGateway.sendToMqtt(split[1]);
+        ObjectMapper mapper = new ObjectMapper();
+        ObjectNode jsonResponse = mapper.createObjectNode();
+
+        // items 문자열을 JSON 객체로 변환하여 JSON 응답에 추가
+        ObjectNode itemsNode = (ObjectNode) mapper.readTree(content);
+        StringBuilder trueItems = new StringBuilder();
+
+        itemsNode.fieldNames().forEachRemaining(fieldName -> {
+            JsonNode value = itemsNode.get(fieldName);
+            jsonResponse.set(fieldName, value);
+            if (!fieldName.equals("weather")) {
+                if (value.asBoolean()) {
+                    if (trueItems.length() > 0) {
+                        trueItems.append(", ");
+                    }
+                    System.out.println(fieldName);
+                    trueItems.append(fieldName);
+                }
+            }
+        });
+
+        String item = trueItems.toString();
+
+        // true인 항목을 문자열로 출력 (weather는 제외)
+        System.out.println("True items: " + item);
+
+        mqttGateway.sendToMqtt(trueItems.toString());
         mqttGateway.sendToMqtt(mot);
-        if (mot.equals("1")) mot = "2";
-        else mot = "1";
 
         Saave saave = saaveRepository.findById(1L)
                 .orElseThrow(() -> new IllegalArgumentException());
 
-        saave.update(split[0], split[2]);
+        saave.update(jsonResponse.toString(), "1");
 
-        ObjectMapper mapper = new ObjectMapper();
-        JsonNode rootNode = mapper.readTree(split[0]);
-
-        List<String> trueItems = new ArrayList<>();
-        Iterator<Map.Entry<String, JsonNode>> fields = rootNode.fields();
-        while (fields.hasNext()) {
-            Map.Entry<String, JsonNode> field = fields.next();
-            if (field.getValue().asBoolean()) {
-                trueItems.add(field.getKey());
-            }
-        }
-
-        return trueItems;
+        return jsonResponse;
     }
 }

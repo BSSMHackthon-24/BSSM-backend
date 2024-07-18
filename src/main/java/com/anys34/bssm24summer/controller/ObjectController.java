@@ -33,9 +33,6 @@ public class ObjectController {
         ObjectMapper mapper = new ObjectMapper();
         ObjectNode jsonResponse = mapper.createObjectNode();
 
-        // weather를 int로 변환하여 JSON에 추가
-        jsonResponse.put("weather", Integer.parseInt(save.getWeather()));
-
         // items 문자열을 JSON 객체로 변환하여 JSON 응답에 추가
         ObjectNode itemsNode = (ObjectNode) mapper.readTree(save.getSave());
         itemsNode.fieldNames().forEachRemaining(fieldName -> {
@@ -50,7 +47,7 @@ public class ObjectController {
     }
 
     @GetMapping("/chat")
-    public List<String> chat(@RequestParam String answer) throws JsonProcessingException {
+    public ObjectNode chat(@RequestParam String answer) throws JsonProcessingException {
         return objectService.chat(answer);
     }
 
